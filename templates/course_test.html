@@ -5,14 +5,14 @@
     {% if error %}
         <h2 class="text-center" style="color: white;">{{ error }}</h2>
         <div class="text-center">
-            <a href="{% url 'api_courses' %}" class="btn btn-primary">Вернуться к курсам</a>
+            <a href="{% url 'courses:api_courses' %}" class="btn btn-primary">Вернуться к курсам</a>
         </div>
     {% else %}
         <div id="test-container">
             <h2 id="question-counter" class="text-center mb-4" style="color: #28a745; position: relative; z-index: 2;">
                 Вопрос 1 из {{ questions|length }}
             </h2>
-            <form id="test-form" method="POST" action="{% url 'course_test' course_name=course_name %}">
+            <form id="test-form" method="POST" action="{% url 'courses:course_test' course_name=course_name %}">
                 {% csrf_token %}
                 <input type="hidden" name="course_name" value="{{ course_name }}">
                 <div id="questions" style="position: relative; z-index: 2;">

@@ -12,7 +12,7 @@
                 {% for course in favorite_courses %}
                     <div class="col">
                         <div class="card h-100 text-center position-relative" style="background-color: white; border: 1px solid #ccc;">
-                            <a href="{% url 'course_detail' course.name %}" class="course-link"></a>
+                            <a href="{% url 'courses:course_detail' course.name %}" class="course-link"></a>
                             <img src="{% if course.icon == 'question.png' %}https://cdn-icons-png.flaticon.com/512/3534/3534218.png{% else %}https://cdn-icons-png.flaticon.com/512/{{ course.icon }}{% endif %}"
                                  class="card-img-top mx-auto mt-3" style="width: 80px; height: 80px;" alt="{{ course.name }} Icon">
                             <div class="card-body">
@@ -23,7 +23,7 @@
                                          aria-valuenow="{{ course.progress }}" aria-valuemin="0" aria-valuemax="100"></div>
                                 </div>
                                 <p class="card-text" style="color: black;">Пройдено: {{ course.progress|default:0 }}%</p>
-                                <form class="toggle-favorite-form" method="POST" action="{% url 'toggle_favorite' %}">
+                                <form class="toggle-favorite-form" method="POST" action="{% url 'courses:toggle_favorite' %}">
                                     {% csrf_token %}
                                     <input type="hidden" name="course_name" value="{{ course.name }}">
                                     <input type="hidden" name="action" value="remove">

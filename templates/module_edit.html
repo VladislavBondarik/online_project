@@ -5,24 +5,9 @@
     <h1 class="text-center">Редактировать модуль</h1>
     <form method="post" class="mt-4">
         {% csrf_token %}
-        <div class="form-group">
-            <label for="title">Название модуля:</label>
-            <input type="text" class="form-control" id="title" name="title" value="{{ module.title }}" required>
-        </div>
-        <div class="form-group">
-            <label for="description">Описание:</label>
-            <textarea class="form-control" id="description" name="description" rows="3" required>{{ module.description }}</textarea>
-        </div>
-        <div class="form-group">
-            <label for="course">Курс:</label>
-            <select class="form-control" id="course" name="course" required>
-                {% for course in courses %}
-                    <option value="{{ course.id }}" {% if course.id == module.course.id %}selected{% endif %}>{{ course.title }}</option>
-                {% endfor %}
-            </select>
-        </div>
+        {{ form.as_p }}
         <button type="submit" class="btn btn-primary">Сохранить</button>
-        <a href="{% url 'module_list' %}" class="btn btn-secondary">Назад</a>
+        <a href="{% url 'courses:module_list' %}" class="btn btn-secondary">Назад</a>
     </form>
 </div>
 {% endblock %}

@@ -3,7 +3,7 @@
 {% block content %}
 <div class="container mt-5">
     <h1 class="text-center">Список модулей</h1>
-    <a href="{% url 'module_create' %}" class="btn btn-primary mb-3">Создать модуль</a>
+    <a href="{% url 'courses:module_create' %}" class="btn btn-primary mb-3">Создать модуль</a>
     <table class="table table-striped">
         <thead>
             <tr>
@@ -20,8 +20,8 @@
                     <td>{{ module.title }}</td>
                     <td>{{ module.course.title }}</td>
                     <td>
-                        <a href="{% url 'module_edit' module.id %}" class="btn btn-sm btn-warning">Редактировать</a>
-                        <a href="{% url 'module_delete' module.id %}" class="btn btn-sm btn-danger">Удалить</a>
+                        <a href="{% url 'courses:module_edit' module.id %}" class="btn btn-sm btn-warning">Редактировать</a>
+                        <a href="{% url 'courses:module_delete' module.id %}" class="btn btn-sm btn-danger">Удалить</a>
                     </td>
                 </tr>
             {% empty %}

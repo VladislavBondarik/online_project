@@ -1,0 +1,53 @@
+/* Черный фон */
+body {
+    background-color: black; /* Черный фон для всей страницы */
+    color: white; /* Белый текст */
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif; /* Шрифт для страницы */
+}
+
+/* Логотип */
+.logo {
+    font-size: 48px; /* Размер шрифта логотипа */
+    font-weight: bold; /* Жирный шрифт */
+    color: white;
+    text-align: center;
+    position: absolute;
+    top: 20px; /* Располагаем логотип в верхней части */
+    left: 50%;
+    transform: translateX(-50%); /* Центрируем по горизонтали */
+}
+
+/* Контейнер для кнопок */
+.btn-container {
+    position: absolute;
+    top: 100px; /* Отступ от верхней части */
+    left: 20px; /* Отступ от левого края */
+}
+
+/* Кнопки */
+.custom-btn {
+    background-color: gray; /* Серый фон кнопок */
+    color: white; /* Белый цвет текста */
+    border: none;
+    padding: 10px 20px;
+    margin-bottom: 5px; /* Маленькое расстояние между кнопками */
+    font-size: 14px; /* Меньший размер шрифта */
+    cursor: pointer;
+    border-radius: 5px; /* Скругленные углы */
+    transition: all 0.3s ease; /* Плавный эффект при наведении */
+}
+
+/* Эффект при наведении */
+.custom-btn:hover {
+    background-color: white; /* Белый фон при наведении */
+    color: black; /* Черный текст при наведении */
+    font-style: italic; /* Курсивный стиль текста */
+    text-decoration: underline; /* Подчеркивание текста */
+}
+
+/* Секции */
+.content-container {
+    margin-top: 200px; /* Отступ сверху для контента */
+}

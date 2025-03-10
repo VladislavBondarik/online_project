@@ -6,7 +6,8 @@
         {% for course in courses %}
         <div class="col">
             <div class="card h-100 text-center position-relative" style="background-color: white; border: 1px solid #ccc;">
-                <a href="{% url 'course_detail' course.name %}" class="course-link"></a>
+                <!-- Ссылка на course_detail -->
+                <a href="{% url 'courses:course_detail' course.name %}" class="course-link"></a>
                 <img src="{% if course.icon == 'question.png' %}https://cdn-icons-png.flaticon.com/512/3534/3534218.png{% else %}https://cdn-icons-png.flaticon.com/512/{{ course.icon }}{% endif %}"
                      class="card-img-top mx-auto mt-3" style="width: 80px; height: 80px;" alt="{{ course.name }} Icon">
                 <div class="card-body">
@@ -23,7 +24,8 @@
                             {% else %}
                                 <button onclick="toggleFavorite('{{ course.name }}', 'add')" class="btn btn-warning btn-xs favorite-btn">Добавить в избранное</button>
                             {% endif %}
-                            <a href="{% url 'course_test' course.name %}" class="btn btn-primary btn-xs test-btn">Тест</a>
+                            <!-- Ссылка на course_test -->
+                            <a href="{% url 'courses:course_test' course.name %}" class="btn btn-primary btn-xs test-btn">Тест</a>
                         </div>
                     {% endif %}
                 </div>
@@ -47,9 +49,8 @@
         font-style: italic;
     }
     .favorite-btn:active, .test-btn:active {
-        font-style: italic; /
+        font-style: italic;
     }
-
     .favorite-btn, .test-btn, .favorite-btn:hover, .test-btn:hover, .favorite-btn:active, .test-btn:active {
         transform: none;
         scale: 1;
@@ -70,7 +71,7 @@
         data.append('course_name', courseName);
         data.append('action', action);
 
-        fetch('/toggle_favorite/', {
+        fetch("{% url 'courses:toggle_favorite' %}", {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',

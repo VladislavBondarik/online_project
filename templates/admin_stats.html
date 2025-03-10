@@ -1,14 +1,41 @@
 {% extends 'base.html' %}
-{% block title %}Статистика для админа{% endblock %}
-
+{% block title %}Статистика - ITCAREER{% endblock %}
 {% block content %}
-    <h1>Статистика</h1>
-    <p>Доступно только администраторам.</p>
-    <ul>
-        <li>Количество курсов: {{ stats.course_count }}</li>
-        <li>Количество модулей: {{ stats.module_count }}</li>
-        <li>Количество материалов: {{ stats.material_count }}</li>
-        <li>Количество пользователей: {{ stats.user_count }}</li>
-    </ul>
-    <a href="{% url 'home' %}" class="btn btn-primary">На главную</a>
+<div class="container mt-5">
+    <h1 class="text-center mb-4">Статистика</h1>
+    <div class="row">
+        <div class="col-md-6">
+            <h3>Общая статистика</h3>
+            <ul class="list-group">
+                <li class="list-group-item">Курсов: {{ stats.course_count }}</li>
+                <li class="list-group-item">Модулей: {{ stats.module_count }}</li>
+                <li class="list-group-item">Материалов: {{ stats.material_count }}</li>
+                <li class="list-group-item">Пользователей: {{ stats.user_count }}</li>
+                <li class="list-group-item">Записей на курсы: {{ stats.enrollment_count }}</li>
+                <li class="list-group-item">Активных записей: {{ stats.active_enrollments }}</li>
+                <li class="list-group-item">Завершённых записей: {{ stats.completed_enrollments }}</li>
+                <li class="list-group-item">Средний прогресс: {{ stats.average_progress|floatformat:2 }}%</li>
+            </ul>
+        </div>
+        <div class="col-md-6">
+            <h3>Топ-5 курсов по популярности</h3>
+            <ul class="list-group">
+                {% for course in stats.top_courses %}
+                    <li class="list-group-item">{{ course.title }} ({{ course.enrollment_count }} записей)</li>
+                {% empty %}
+                    <li class="list-group-item">Нет данных</li>
+                {% endfor %}
+            </ul>
+            <h3 class="mt-4">Топ-5 активных пользователей</h3>
+            <ul class="list-group">
+                {% for user in stats.active_users %}
+                    <li class="list-group-item">{{ user.username }} ({{ user.enrollment_count }} курсов)</li>
+                {% empty %}
+                    <li class="list-group-item">Нет данных</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    <a href="{% url 'courses:home' %}" class="btn btn-primary mt-3">Назад</a>
+</div>
 {% endblock %}

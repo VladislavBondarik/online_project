@@ -13,159 +13,229 @@ from .serializers import (
     EnrollmentSerializer, UserProgressSerializer, FavoriteCourseSerializer, SurveySerializer
 )
 from django.contrib.auth.models import User
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
 import locale
 from django.contrib.admin.views.decorators import staff_member_required
+from .forms import CourseForm, ModuleForm, MaterialForm
 
 locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
 
 
 @login_required
-def module_create(request):
-    if not request.user.is_staff:
-        messages.error(request, 'Только администраторы могут управлять модулями.')
-        return redirect('home')
-
+def api_profile(request):
+    enrollments = Enrollment.objects.filter(user=request.user)
+    progress = UserProgress.objects.filter(user=request.user)
     if request.method == 'POST':
-        title = request.POST.get('title')
-        description = request.POST.get('description')
-        course_id = request.POST.get('course')
-        course = get_object_or_404(Course, id=course_id)
-        Module.objects.create(title=title, description=description, course=course)
-        messages.success(request, 'Модуль успешно создан!')
-        return redirect('module_list')
-
-    courses = Course.objects.all()
-    return render(request, 'module_create.html', {'courses': courses})
+        if 'update_profile' in request.POST:
+            username = request.POST.get('username')
+            email = request.POST.get('email')
+            if User.objects.exclude(id=request.user.id).filter(username=username).exists():
+                messages.error(request, 'Имя пользователя уже занято.')
+            else:
+                request.user.username = username
+                request.user.email = email
+                request.user.save()
+                messages.success(request, 'Профиль обновлён!')
+        elif 'change_password' in request.POST:
+            form = PasswordChangeForm(user=request.user, data=request.POST)
+            if form.is_valid():
+                form.save()
+                messages.success(request, 'Пароль изменён!')
+                return redirect('courses:api_login')
+            else:
+                messages.error(request, 'Ошибка при смене пароля.')
+        elif 'delete_account' in request.POST:
+            request.user.delete()
+            messages.success(request, 'Аккаунт удалён.')
+            return redirect('courses:home')
+    password_form = PasswordChangeForm(user=request.user)
+    return render(request, 'api_profile.html', {
+        'user': request.user,
+        'enrollments': enrollments,
+        'progress': progress,
+        'password_form': password_form
+    })
 
 
 @login_required
-def module_list(request):
-    if not request.user.is_staff:
-        messages.error(request, 'Только администраторы могут просматривать модули.')
-        return redirect('home')
+def course_detail(request, course_name):
+    course_name = course_name.replace('-', '/')
+    course = get_object_or_404(Course, title=course_name)
+    modules = Module.objects.filter(course=course)
+    materials = Material.objects.filter(module__course=course)
+    enrollment = Enrollment.objects.filter(user=request.user, course=course).first()
+    if request.method == 'POST':
+        if 'enroll' in request.POST and not enrollment:
+            Enrollment.objects.create(user=request.user, course=course)
+            messages.success(request, f'Вы записаны на курс {course.title}!')
+        elif 'unenroll' in request.POST and enrollment:
+            enrollment.delete()
+            messages.success(request, f'Вы отписаны от курса {course.title}!')
+        return redirect('courses:course_detail', course_name=course_name.replace('/', '-'))
+    return render(request, 'course_detail.html', {
+        'course': course,
+        'modules': modules,
+        'materials': materials,
+        'enrollment': enrollment
+    })
 
+
+@login_required
+@staff_member_required
+def course_delete(request, pk):
+    course = get_object_or_404(Course, pk=pk)
+    if request.method == 'POST':
+        course.delete()
+        messages.success(request, "Курс удалён!")
+        return redirect('courses:api_courses')
+    return render(request, 'course_delete.html', {'course': course})
+
+
+def home(request):
+    return render(request, 'home.html')
+
+
+@login_required
+@staff_member_required
+def course_create(request, pk=None):
+    if pk:
+        course = get_object_or_404(Course, pk=pk)
+    else:
+        course = None
+    if request.method == 'POST':
+        form = CourseForm(request.POST, instance=course)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Курс успешно сохранён!" if course else "Курс успешно создан!")
+            return redirect('courses:api_courses')
+        if 'delete' in request.POST and course:
+            course.delete()
+            messages.success(request, "Курс удалён!")
+            return redirect('courses:api_courses')
+    else:
+        form = CourseForm(instance=course)
+    return render(request, 'course_create.html', {'form': form, 'course': course})
+
+
+@login_required
+@staff_member_required
+def module_list(request):
     modules = Module.objects.all()
     return render(request, 'module_list.html', {'modules': modules})
 
 
 @login_required
-def module_edit(request, module_id):
-    if not request.user.is_staff:
-        messages.error(request, 'Только администраторы могут редактировать модули.')
-        return redirect('home')
-
-    module = get_object_or_404(Module, id=module_id)
+@staff_member_required
+def module_create(request):
     if request.method == 'POST':
-        module.title = request.POST.get('title')
-        module.description = request.POST.get('description')
-        course_id = request.POST.get('course')
-        module.course = get_object_or_404(Course, id=course_id)
-        module.save()
-        messages.success(request, 'Модуль успешно обновлён!')
-        return redirect('module_list')
-
-    courses = Course.objects.all()
-    return render(request, 'module_edit.html', {'module': module, 'courses': courses})
+        form = ModuleForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Модуль успешно создан!")
+            return redirect('courses:module_list')
+    else:
+        form = ModuleForm()
+    return render(request, 'module_create.html', {'form': form})
 
 
 @login_required
-def module_delete(request, module_id):
-    if not request.user.is_staff:
-        messages.error(request, 'Только администраторы могут удалять модули.')
-        return redirect('home')
+@staff_member_required
+def module_edit(request, pk):
+    module = get_object_or_404(Module, pk=pk)
+    if request.method == 'POST':
+        form = ModuleForm(request.POST, instance=module)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Модуль успешно обновлён!")
+            return redirect('courses:module_list')
+    else:
+        form = ModuleForm(instance=module)
+    return render(request, 'module_edit.html', {'form': form})
 
-    module = get_object_or_404(Module, id=module_id)
+
+@login_required
+@staff_member_required
+def module_delete(request, pk):
+    module = get_object_or_404(Module, pk=pk)
     if request.method == 'POST':
         module.delete()
-        messages.success(request, 'Модуль успешно удалён!')
-        return redirect('module_list')
+        messages.success(request, "Модуль успешно удалён!")
+        return redirect('courses:module_list')
     return render(request, 'module_delete.html', {'module': module})
 
 
 @login_required
-def material_create(request):
-    if not request.user.is_staff:
-        messages.error(request, 'Только администраторы могут управлять материалами.')
-        return redirect('home')
-
-    if request.method == 'POST':
-        title = request.POST.get('title')
-        type = request.POST.get('type')
-        content = request.FILES.get('content') or request.POST.get('content_url')
-        module_id = request.POST.get('module')
-        module = get_object_or_404(Module, id=module_id)
-        material = Material(title=title, type=type, module=module)
-        if request.FILES.get('content'):
-            material.content = content
-        else:
-            material.content_url = content
-        material.save()
-        messages.success(request, 'Материал успешно создан!')
-        return redirect('material_list')
-
-    modules = Module.objects.all()
-    return render(request, 'material_create.html', {'modules': modules})
-
-
-@login_required
+@staff_member_required
 def material_list(request):
-    if not request.user.is_staff:
-        messages.error(request, 'Только администраторы могут просматривать материалы.')
-        return redirect('home')
-
     materials = Material.objects.all()
     return render(request, 'material_list.html', {'materials': materials})
 
 
 @login_required
-def material_edit(request, material_id):
-    if not request.user.is_staff:
-        messages.error(request, 'Только администраторы могут редактировать материалы.')
-        return redirect('home')
-
-    material = get_object_or_404(Material, id=material_id)
+@staff_member_required
+def material_create(request):
     if request.method == 'POST':
-        material.title = request.POST.get('title')
-        material.type = request.POST.get('type')
-        content = request.FILES.get('content') or request.POST.get('content_url')
-        if content:
-            if request.FILES.get('content'):
-                material.content = content
-            else:
-                material.content_url = content
-        module_id = request.POST.get('module')
-        material.module = get_object_or_404(Module, id=module_id)
-        material.save()
-        messages.success(request, 'Материал успешно обновлён!')
-        return redirect('material_list')
-
-    modules = Module.objects.all()
-    return render(request, 'material_edit.html', {'material': material, 'modules': modules})
+        form = MaterialForm(request.POST, request.FILES)
+        if form.is_valid():
+            material = form.save(commit=False)
+            if not material.content and form.cleaned_data['content_url']:
+                material.content = form.cleaned_data['content_url']
+            material.save()
+            messages.success(request, "Материал успешно создан!")
+            return redirect('courses:material_list')
+    else:
+        form = MaterialForm()
+    return render(request, 'material_create.html', {'form': form})
 
 
 @login_required
-def material_delete(request, material_id):
-    if not request.user.is_staff:
-        messages.error(request, 'Только администраторы могут удалять материалы.')
-        return redirect('home')
+@staff_member_required
+def material_edit(request, pk):
+    material = get_object_or_404(Material, pk=pk)
+    if request.method == 'POST':
+        form = MaterialForm(request.POST, request.FILES, instance=material)
+        if form.is_valid():
+            material = form.save(commit=False)
+            if not material.content and form.cleaned_data['content_url']:
+                material.content = form.cleaned_data['content_url']
+            material.save()
+            messages.success(request, "Материал успешно обновлён!")
+            return redirect('courses:material_list')
+    else:
+        form = MaterialForm(instance=material)
+    return render(request, 'material_edit.html', {'form': form})
 
-    material = get_object_or_404(Material, id=material_id)
+
+@login_required
+@staff_member_required
+def material_delete(request, pk):
+    material = get_object_or_404(Material, pk=pk)
     if request.method == 'POST':
         material.delete()
-        messages.success(request, 'Материал успешно удалён!')
-        return redirect('material_list')
+        messages.success(request, "Материал успешно удалён!")
+        return redirect('courses:material_list')
     return render(request, 'material_delete.html', {'material': material})
 
 
+@login_required
 @staff_member_required
 def admin_stats(request):
-    """Страница статистики для администраторов."""
     stats = {
         'course_count': Course.objects.count(),
         'module_count': Module.objects.count(),
         'material_count': Material.objects.count(),
         'user_count': User.objects.count(),
+        'enrollment_count': Enrollment.objects.count(),
+        'active_enrollments': Enrollment.objects.filter(status='active').count(),
+        'completed_enrollments': Enrollment.objects.filter(status='completed').count(),
+        'canceled_enrollments': Enrollment.objects.filter(status='canceled').count(),
+        'avg_progress': UserProgress.objects.aggregate(models.Avg('progress'))['progress__avg'] or 0,
+        'top_courses': Course.objects.annotate(
+            enrollment_count=models.Count('enrollments')
+        ).order_by('-enrollment_count')[:5],
+        'user_progress': UserProgress.objects.values('user__username', 'course__title').annotate(
+            avg_progress=models.Avg('progress')
+        ).order_by('-avg_progress')[:10]
     }
     return render(request, 'admin_stats.html', {'stats': stats})
 
@@ -176,9 +246,7 @@ def join(request):
         if form.is_valid():
             form.save()
             messages.success(request, 'Регистрация прошла успешно! Войдите в систему.')
-            return redirect('api_login')
-        else:
-            messages.error(request, 'Ошибка регистрации. Проверьте данные.')
+            return redirect('courses:api_login')
     else:
         form = UserCreationForm()
     return render(request, 'join.html', {'form': form})
@@ -197,7 +265,7 @@ def api_login(request):
             else:
                 request.session.set_expiry(1209600)
             messages.success(request, 'Вы успешно вошли!')
-            return redirect('api_courses')
+            return redirect('courses:api_courses')
         else:
             messages.error(request, 'Неверный логин или пароль.')
     return render(request, 'api_login.html')
@@ -205,7 +273,7 @@ def api_login(request):
 
 def api_logout(request):
     logout(request)
-    return redirect('home')
+    return redirect('courses:home')
 
 
 @login_required
@@ -213,7 +281,6 @@ def api_profile(request):
     return render(request, 'api_profile.html', {'user': request.user})
 
 
-# Общие страницы
 def about(request):
     return render(request, 'about.html')
 
@@ -226,86 +293,88 @@ def api_overview(request):
 def settings(request):
     if request.user.is_staff or request.user.is_superuser:
         return render(request, 'settings.html')
-    return redirect('home')
+    return redirect('courses:home')
 
 
-# Курсы и избранное
 def api_courses(request):
-    all_courses = [
-        {'name': 'Backend', 'icon': '2920/2920346.png', 'date': '15 апреля 2025'},
-        {'name': 'Frontend', 'icon': '1055/1055681.png', 'date': '20 апреля 2025'},
-        {'name': 'Data Science', 'icon': '2920/2920352.png', 'date': '25 апреля 2025'},
-        {'name': 'DevOps', 'icon': '1055/1055680.png', 'date': '30 апреля 2025'},
-        {'name': 'AI/ML', 'icon': '2920/2920348.png', 'date': '5 мая 2025'},
-        {'name': 'Cybersecurity', 'icon': '5968/5968852.png', 'date': '10 мая 2025'},
-        {'name': 'Mobile Development', 'icon': '5968/5968896.png', 'date': '15 мая 2025'},
-        {'name': 'Cloud Computing', 'icon': 'question.png', 'date': '20 мая 2025'},
-        {'name': 'Game Development', 'icon': '5968/5968880.png', 'date': '25 мая 2025'},
-        {'name': 'UI/UX Design', 'icon': '5968/5968908.png', 'date': '30 мая 2025'},
-        {'name': 'Blockchain', 'icon': '5968/5968864.png', 'date': '5 июня 2025'},
-        {'name': 'Python Basics', 'icon': '5968/5968876.png', 'date': '10 июня 2025'},
-        {'name': 'Java Programming', 'icon': '5968/5968844.png', 'date': '15 июня 2025'},
-        {'name': 'Web Development', 'icon': '5968/5968912.png', 'date': '20 июня 2025'},
-        {'name': 'Database Design', 'icon': '5968/5968820.png', 'date': '25 июня 2025'},
+    predefined_courses = [
+        {'title': 'Backend', 'start_date': '15 апреля 2025', 'icon': '189/189996.png'},
+        {'title': 'Frontend', 'start_date': '20 апреля 2025', 'icon': '3534/3534218.png'},
+        {'title': 'Data Science', 'start_date': '25 апреля 2025', 'icon': '3135/3135715.png'},
+        {'title': 'DevOps', 'start_date': '30 апреля 2025', 'icon': '5968/5968708.png'},
+        {'title': 'AI-ML', 'start_date': '5 мая 2025', 'icon': '174/174847.png'},
+        {'title': 'Cybersecurity', 'start_date': '10 мая 2025', 'icon': '2910/2910906.png'},
+        {'title': 'Mobile Development', 'start_date': '15 мая 2025', 'icon': '174/174854.png'},
+        {'title': 'Cloud Computing', 'start_date': '20 мая 2025', 'icon': '174/174849.png'},
+        {'title': 'Game Development', 'start_date': '25 мая 2025', 'icon': '174/174857.png'},
+        {'title': 'UI-UX Design', 'start_date': '30 мая 2025', 'icon': '174/174860.png'},
+        {'title': 'Blockchain', 'start_date': '5 июня 2025', 'icon': '5968/5968672.png'},
+        {'title': 'Python Basics', 'start_date': '10 июня 2025', 'icon': '174/174879.png'},
+        {'title': 'Java Programming', 'start_date': '15 июня 2025', 'icon': '5968/5968679.png'},
+        {'title': 'Web Development', 'start_date': '20 июня 2025', 'icon': '174/174881.png'},
+        {'title': 'Database Design', 'start_date': '25 июня 2025', 'icon': '174/174850.png'},
     ]
+
+    # Синхронизация с базой данных
+    for course_data in predefined_courses:
+        naive_start_date = timezone.datetime.strptime(course_data['start_date'], '%d %B %Y')
+        aware_start_date = timezone.make_aware(naive_start_date)
+        aware_end_date = aware_start_date + timezone.timedelta(days=90)
+        if not Course.objects.filter(title=course_data['title']).exists():
+            Course.objects.create(
+                title=course_data['title'],
+                description=f"Курс по {course_data['title']}",
+                instructor=User.objects.filter(is_staff=True).first() or User.objects.first(),
+                start_date=aware_start_date,
+                end_date=aware_end_date
+            )
+
+    # Получение курсов из базы
+    db_courses = Course.objects.all()
+    icon_map = {course['title']: course['icon'] for course in predefined_courses}
     if request.user.is_authenticated:
         favorite_courses = FavoriteCourse.objects.filter(user=request.user)
         courses = []
-        for course in all_courses:
-            fav = favorite_courses.filter(course_name=course['name']).first()
+        for course in db_courses:
+            fav = favorite_courses.filter(course_name=course.title).first()
             courses.append({
-                'name': course['name'],
-                'icon': course['icon'],
-                'date': course['date'],
+                'name': course.title.replace('/', '-'),
+                'icon': icon_map.get(course.title, '3534/3534218.png'),
+                'date': course.start_date.strftime('%d %B %Y'),
                 'progress': fav.progress if fav else 0,
                 'is_favorite': fav is not None
             })
     else:
-        courses = [{'name': c['name'], 'icon': c['icon'], 'date': c['date'], 'progress': 0, 'is_favorite': False} for c
-                   in all_courses]
+        courses = [{
+            'name': course.title.replace('/', '-'),
+            'icon': icon_map.get(course.title, '3534/3534218.png'),
+            'date': course.start_date.strftime('%d %B %Y'),
+            'progress': 0,
+            'is_favorite': False
+        } for course in db_courses]
     return render(request, 'api_courses.html', {'courses': courses})
-
-
-def home(request):
-    return render(request, 'home.html')
 
 
 @login_required
 def favorites(request):
     favorite_courses = FavoriteCourse.objects.filter(user=request.user)
     if not favorite_courses.exists():
-        return render(request, 'favorites.html', {'message': 'У вас нет добавленных курсов'})
+        return render(request, 'favorites.html', {'favorite_courses': []})
+
     courses = []
-    all_courses = {
-        'Backend': '2920/2920346.png',
-        'Frontend': '1055/1055681.png',
-        'Data Science': '2920/2920352.png',
-        'DevOps': '1055/1055680.png',
-        'AI/ML': '2920/2920348.png',
-        'Cybersecurity': '5968/5968852.png',
-        'Mobile Development': '5968/5968896.png',
-        'Cloud Computing': 'question.png',
-        'Game Development': '5968/5968880.png',
-        'UI/UX Design': '5968/5968908.png',
-        'Blockchain': '5968/5968864.png',
-        'Python Basics': '5968/5968876.png',
-        'Java Programming': '5968/5968844.png',
-        'Web Development': '5968/5968912.png',
-        'Database Design': '5968/5968820.png',
-    }
     for fav in favorite_courses:
         try:
             course = Course.objects.get(title=fav.course_name)
             courses.append({
-                'name': fav.course_name,
-                'icon': all_courses.get(fav.course_name, 'question.png'),
+                'name': fav.course_name.replace('/', '-'),
+                'icon': 'question.png',
                 'date': course.start_date.strftime('%d %B %Y'),
                 'progress': fav.progress,
             })
         except Course.DoesNotExist:
             courses.append({
-                'name': fav.course_name,
-                'icon': all_courses.get(fav.course_name, 'question.png'),
+                'name': fav.course_name.replace('/', '-'),
+                'icon': 'question.png',
                 'date': timezone.now().strftime('%d %B %Y'),
                 'progress': fav.progress,
             })
@@ -314,60 +383,30 @@ def favorites(request):
 
 @login_required
 def toggle_favorite(request):
+    print(f"Request method: {request.method}")
+    print(f"Request POST data: {request.POST}")
     if request.method == 'POST':
-        course_name = request.POST.get('course_name')
-        action = request.POST.get('action')
-        if not course_name:
+        course_name_raw = request.POST.get('course_name')
+        print(f"Received course_name: {course_name_raw}")
+        if not course_name_raw:
             return JsonResponse({'status': 'error', 'message': 'Course name is required'}, status=400)
+        course_name = course_name_raw.replace('-', '/')
+        action = request.POST.get('action')
+        print(f"Received action: {action}")
         if action == 'remove':
             FavoriteCourse.objects.filter(user=request.user, course_name=course_name).delete()
-            return JsonResponse({'status': 'removed'})
+            return JsonResponse({'status': 'removed'}, status=200)
         elif action == 'add':
             FavoriteCourse.objects.get_or_create(user=request.user, course_name=course_name, defaults={'progress': 0})
-            return JsonResponse({'status': 'added'})
+            return JsonResponse({'status': 'added'}, status=200)
         else:
             return JsonResponse({'status': 'error', 'message': 'Invalid action'}, status=400)
     return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
 
 
 @login_required
-def course_create(request):
-    if request.method == 'POST':
-        title = request.POST.get('title')
-        description = request.POST.get('description')
-        start_date = request.POST.get('start_date')
-        end_date = request.POST.get('end_date')
-        if request.user.is_staff:
-            from django.utils import timezone
-            import datetime
-            start_date = timezone.make_aware(datetime.datetime.strptime(start_date, '%Y-%m-%d %H:%M:%S'))
-            end_date = timezone.make_aware(datetime.datetime.strptime(end_date, '%Y-%m-%d %H:%M:%S'))
-            course = Course.objects.create(
-                title=title,
-                description=description,
-                instructor=request.user,
-                start_date=start_date,
-                end_date=end_date
-            )
-            messages.success(request, 'Курс успешно создан!')
-            return redirect('api_courses')
-        else:
-            messages.error(request, 'Только администраторы могут создавать курсы.')
-    try:
-        courses = Course.objects.all()
-    except:
-        courses = []
-    return render(request, 'course_create.html', {'courses': courses})
-
-
-def course_detail(request, course_name):
-    course = get_object_or_404(Course, title=course_name)
-    return render(request, 'course_detail.html', {'course': course})
-
-
-# Тесты для курсов
-@login_required
 def course_test(request, course_name):
+    course_name = course_name.replace('-', '/')
     test_questions = {
         'Backend': [
             {'id': 1, 'text': 'Сколько возможных значений у переменной типа bool?',
@@ -392,7 +431,6 @@ def course_test(request, course_name):
              'correct': 'c'},
             {'id': 9, 'text': 'Что является оператором ввода и вывода?',
              'options': {'a': 'print', 'b': 'input', 'c': 'len', 'd': 'range'}, 'correct': 'a,b'},
-            # Множественный выбор пока не поддерживается, см. ниже
         ],
         'Frontend': [
             {'id': 1, 'text': 'Что такое HTML?',
@@ -462,7 +500,6 @@ def course_test(request, course_name):
     if not questions:
         return render(request, 'course_test.html',
                       {'course_name': course_name, 'error': 'Тест для этого курса ещё не готов.'})
-
     if request.method == 'POST':
         total_questions = len(questions)
         correct_answers = 0
@@ -481,7 +518,6 @@ def course_test(request, course_name):
                 'options': q['options']
             })
 
-        # Проверка, что все вопросы отвечены
         if len([r for r in results if r['user_answer'] == 'Не отвечено']) > 0:
             return render(request, 'course_test.html', {
                 'course_name': course_name,
@@ -490,11 +526,22 @@ def course_test(request, course_name):
             })
 
         percentage = (correct_answers / total_questions) * 100 if total_questions > 0 else 0
+        course = get_object_or_404(Course, title=course_name)
 
         if FavoriteCourse.objects.filter(user=request.user, course_name=course_name).exists():
             favorite = FavoriteCourse.objects.get(user=request.user, course_name=course_name)
             favorite.progress = max(favorite.progress, percentage)
             favorite.save()
+
+        module = Module.objects.filter(course=course).first()
+        if module:
+            progress, created = UserProgress.objects.get_or_create(
+                user=request.user, course=course, module=module,
+                defaults={'progress': percentage}
+            )
+            if not created:
+                progress.progress = max(progress.progress, percentage)
+                progress.save()
 
         context = {
             'course_name': course_name,
@@ -508,7 +555,6 @@ def course_test(request, course_name):
     return render(request, 'course_test.html', {'course_name': course_name, 'questions': questions})
 
 
-# Опросы
 @login_required
 def api_survey(request, survey_type):
     survey_questions = {
@@ -626,7 +672,7 @@ def api_survey(request, survey_type):
 
     if survey_type not in survey_questions:
         messages.error(request, "Неверный тип опроса.")
-        return redirect('home')
+        return redirect('courses:home')
 
     questions = survey_questions[survey_type]
 
@@ -667,16 +713,12 @@ def api_survey(request, survey_type):
             Survey.objects.create(user=request.user, answers=answers, recommended_course=course)
             messages.success(request, f"Рекомендуемый курс: {course.title}")
             del request.session['survey_answers']
-            return redirect('course_detail', course_name=course.title)
-
-        return render(request, 'api_survey.html',
-                      {'survey_type': survey_type, 'question': next_question, 'questions': questions})
+            return redirect('courses:course_detail', course_name=course.title.replace('/', '-'))
 
     request.session['survey_answers'] = {}
     return render(request, 'api_survey.html', {'survey_type': survey_type, 'question': 'q1', 'questions': questions})
 
 
-# Пользователи
 @login_required
 def api_users(request):
     if request.user.is_staff or request.user.is_superuser:
@@ -687,7 +729,6 @@ def api_users(request):
     return render(request, 'api_users.html', context)
 
 
-# REST API Views
 class UserListCreateView(generics.ListCreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer

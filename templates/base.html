@@ -53,7 +53,7 @@
 
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container-fluid">
-            <a class="navbar-brand" href="{% url 'home' %}">Онлайн-курсы</a>
+            <a class="navbar-brand" href="{% url 'courses:home' %}">Онлайн-курсы</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -66,20 +66,21 @@
                             </a>
                             <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
                                 {% if user.is_staff or user.is_superuser %}
-                                    <li><a class="dropdown-item" href="{% url 'course_create' %}">Создать курс</a></li>
-                                    <li><a class="dropdown-item" href="{% url 'module_list' %}">Модули</a></li>
-                                    <li><a class="dropdown-item" href="{% url 'material_list' %}">Материалы</a></li>
-                                    <li><a class="dropdown-item" href="{% url 'api_users' %}">Пользователи</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'courses:course_create' %}">Создать курс</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'courses:module_list' %}">Модули</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'courses:material_list' %}">Материалы</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'courses:api_users' %}">Пользователи</a></li>
                                     <li><a class="dropdown-item" href="{% url 'admin:index' %}">Админ-панель</a></li>
                                 {% endif %}
-                                <li><a class="dropdown-item" href="{% url 'api_courses' %}">Курсы</a></li>
-                                <li><a class="dropdown-item" href="{% url 'api_profile' %}">Профиль</a></li>
-                                <li><a class="dropdown-item" href="{% url 'about' %}">О нас</a></li>
+                                <li><a class="dropdown-item" href="{% url 'courses:api_courses' %}">Курсы</a></li>
+                                <li><a class="dropdown-item" href="{% url 'courses:favorites' %}">Избранное</a></li>
+                                <li><a class="dropdown-item" href="{% url 'courses:api_profile' %}">Профиль</a></li>
+                                <li><a class="dropdown-item" href="{% url 'courses:about' %}">О нас</a></li>
                             </ul>
                         </li>
                     {% else %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'api_login' %}">Войти</a>
+                            <a class="nav-link" href="{% url 'courses:api_login' %}">Войти</a>
                         </li>
                     {% endif %}
                 </ul>
@@ -117,7 +118,7 @@
                     <p>Вы уверены, что хотите выйти?</p>
                 </div>
                 <div class="modal-footer justify-content-center border-0">
-                    <a href="{% url 'api_logout' %}" class="btn btn-logout">Выйти</a>
+                    <a href="{% url 'courses:api_logout' %}" class="btn btn-logout">Выйти</a>
                     <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Отмена</button>
                 </div>
             </div>
@@ -127,7 +128,7 @@
     <footer class="text-white text-center py-2">
         <div class="container">
             <div class="d-flex justify-content-center align-items-center">
-                <a href="{% url 'home' %}" class="mx-2">Онлайн-курсы</a>
+                <a href="{% url 'courses:home' %}" class="mx-2">Онлайн-курсы</a>
                 <img src="{% static 'images/itcareer.png' %}" alt="Logo" class="footer-logo" style="width: 20px; height: 20px; vertical-align: middle; margin-left: 5px;">
                 <span class="copyright mx-2">© 2025</span>
                 <span class="mx-2">|</span>

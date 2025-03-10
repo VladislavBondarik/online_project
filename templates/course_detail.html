@@ -3,16 +3,50 @@
 {% block content %}
 <div class="container mt-5">
     <h1 class="text-center mb-4">{{ course.title }}</h1>
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
     <div class="card">
         <div class="card-body">
             <h5 class="card-title">Описание</h5>
-            <p class="card-text">{{ course.description }}</p>
+            <p class="card-text">{{ course.description|default:"Описание отсутствует" }}</p>
             <h5 class="card-title">Инструктор</h5>
-            <p class="card-text">{{ course.instructor.username }}</p>
+            <p class="card-text">{{ course.instructor.username|default:"Не указан" }}</p>
             <h5 class="card-title">Даты</h5>
-            <p class="card-text">С {{ course.start_date }} по {{ course.end_date }}</p>
+            <p class="card-text">С {{ course.start_date|date:"d M Y" }} по {{ course.end_date|date:"d M Y" }}</p>
         </div>
     </div>
-    <a href="{% url 'api_courses' %}" class="btn btn-primary mt-3">Назад к курсам</a>
+    <h3 class="mt-4">Модули</h3>
+    <ul class="list-group">
+        {% for module in modules %}
+            <li class="list-group-item">
+                {{ module.title }}
+                <ul>
+                    {% for material in materials %}
+                        {% if material.module == module %}
+                            <li>{{ material.title }} ({{ material.type }}) -
+                                {% if material.file %}<a href="{{ material.file.url }}" target="_blank">Скачать</a>
+                                {% elif material.content %}{{ material.content }}{% endif %}
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                </ul>
+            </li>
+        {% empty %}
+            <li class="list-group-item">Модули отсутствуют.</li>
+        {% endfor %}
+    </ul>
+    <form method="post" class="mt-3">
+        {% csrf_token %}
+        {% if enrollment %}
+            <button type="submit" name="unenroll" class="btn btn-danger">Отписаться</button>
+        {% else %}
+            <button type="submit" name="enroll" class="btn btn-primary">Записаться</button>
+        {% endif %}
+    </form>
+    <a href="{% url 'courses:course_test' course.title|slugify %}" class="btn btn-secondary mt-3">Пройти тест</a>
+    <a href="{% url 'courses:api_courses' %}" class="btn btn-primary mt-3">Назад к курсам</a>
 </div>
 {% endblock %}
