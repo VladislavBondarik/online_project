@@ -15,6 +15,7 @@ from .serializers import (
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
 import locale
+from django.contrib.admin.views.decorators import staff_member_required
 
 locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
 
@@ -155,6 +156,18 @@ def material_delete(request, material_id):
         messages.success(request, 'Материал успешно удалён!')
         return redirect('material_list')
     return render(request, 'material_delete.html', {'material': material})
+
+
+@staff_member_required
+def admin_stats(request):
+    """Страница статистики для администраторов."""
+    stats = {
+        'course_count': Course.objects.count(),
+        'module_count': Module.objects.count(),
+        'material_count': Material.objects.count(),
+        'user_count': User.objects.count(),
+    }
+    return render(request, 'admin_stats.html', {'stats': stats})
 
 
 def join(request):
