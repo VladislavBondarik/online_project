@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Опрос {{ survey_type|title }} - ITCAREER{% endblock %}
+
+{% block content %}
+<div class="container mt-5 text-center">
+    <h1>Опрос: {{ survey_type|title }}</h1>
+    {% if question %}
+        {% for q in questions %}
+            {% if q.id == question %}
+                <form method="post">
+                    {% csrf_token %}
+                    <p>{{ q.text }}</p>
+                    {% for option, value in q.options.items %}
+                        <label class="d-block">
+                            <input type="radio" name="{{ q.id }}" value="{{ value }}" required> {{ option }}
+                        </label>
+                    {% endfor %}
+                    <input type="hidden" name="current_question" value="{{ q.id }}">
+                    <button type="submit" class="btn btn-primary mt-3">Далее</button>
+                </form>
+            {% endif %}
+        {% endfor %}
+    {% else %}
+        <p>Опрос завершён!</p>
+        <a href="{% url 'home' %}" class="btn btn-primary">На главную</a>
+    {% endif %}
+</div>
+{% endblock %}

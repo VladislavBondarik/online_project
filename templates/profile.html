@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}Профиль - ITCAREER{% endblock %}
+{% block content %}
+<div class="container mt-5 text-center">
+    <h1>Профиль</h1>
+    <div class="row justify-content-center">
+        <div class="col-md-4">
+            <div class="join-form">
+                <p>Имя пользователя: {{ user.username }}</p>
+                <p>Email: {{ user.email }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

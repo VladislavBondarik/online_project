@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Главная - ITCAREER{% endblock %}
+
+{% block content %}
+<div class="container mt-5 text-center">
+    {% if not user.is_authenticated %}
+        <h1>Добро пожаловать на онлайн-курсы!</h1>
+        <p>Перед тем чтоб начать курсы.</p>
+        <p>Пожалуйста, зарегистрируйтесь или войдите, чтобы начать обучение.</p>
+    {% else %}
+        <h1>Добро пожаловать, {{ user.username }}!</h1>
+        <p>Выберите действие в меню выше.</p>
+    {% endif %}
+</div>
+{% endblock %}

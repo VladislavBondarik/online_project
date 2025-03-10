@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Цели</title>
+</head>
+<body>
+    <h1>Цели</h1>
+    <form method="post" action="/api/survey/create/" id="goals-form">
+        {% csrf_token %}
+        <label for="short_term_goal">Краткосрочная цель:</label><br>
+        <textarea id="short_term_goal" name="goals[short_term_goal]" required></textarea><br>
+
+        <label for="long_term_goal">Долгосрочная цель:</label><br>
+        <textarea id="long_term_goal" name="goals[long_term_goal]" required></textarea><br>
+
+        <button type="submit">Сохранить и продолжить</button>
+    </form>
+</body>
+</html>

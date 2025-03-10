@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Онлайн-курсы{% endblock %}</title>
+    <link rel="icon" href="{% static 'images/itcareer.png' %}" type="image/png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <style>
+        body, html { margin: 0; padding: 0; height: 100%; overflow-x: hidden; }
+        #particles-js { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
+        .navbar { background-color: black; }
+        .navbar-brand { font-weight: bold; font-size: 24px; color: white !important; }
+        .nav-link { color: gray !important; font-size: 16px; }
+        .nav-link:hover { color: white !important; }
+        .content { padding: 20px; position: relative; z-index: 1; color: white; }
+        footer { background-color: rgba(0, 0, 0, 0.8); position: fixed; bottom: 0; width: 100%; z-index: 1; }
+        footer a { color: white; font-size: 12px; text-decoration: none; transition: font-size 0.3s; }
+        footer a:hover { font-size: 14px; color: white; }
+        .creator-tooltip { position: relative; display: inline-block; font-style: italic; font-size: 12px; color: white; margin: 0 8px; }
+        .creator-tooltip .tooltiptext {
+            visibility: hidden; width: 120px; background-color: rgba(0, 0, 0, 0.8); color: white;
+            text-align: center; border-radius: 6px; padding: 5px; position: absolute;
+            z-index: 1; bottom: 125%; left: 50%; margin-left: -60px; font-size: 12px;
+        }
+        .creator-tooltip:hover .tooltiptext { visibility: visible; }
+        .dropdown-menu {
+            background-color: rgba(0, 0, 0, 0.8); border: none; border-radius: 15px; min-width: 200px; max-width: 250px;
+        }
+        .dropdown-item { color: white !important; }
+        .dropdown-item:hover { background-color: rgba(255, 255, 255, 0.1); }
+        .dropdown:hover > .dropdown-menu { display: block; }
+        .navbar-nav { z-index: 1000; padding-left: 10px; }
+        .navbar-logo-right { margin-left: auto; }
+        .btn-submit {
+            background-color: transparent; color: white; border: 1px solid white; border-radius: 5px; padding: 5px 15px;
+        }
+        .btn-submit:hover { background-color: #0d6efd; color: white; border-color: #0d6efd; }
+        .btn-logout {
+            background-color: transparent; color: white; border: 1px solid white; border-radius: 5px; padding: 5px 15px;
+        }
+        .btn-logout:hover { background-color: #0d6efd; color: white; border-color: #0d6efd; }
+        .btn-cancel {
+            background-color: transparent; color: white; border: 1px solid white; border-radius: 5px; padding: 5px 15px;
+        }
+        .btn-cancel:hover { background-color: gray; color: white; border-color: gray; }
+    </style>
+</head>
+<body>
+    <div id="particles-js"></div>
+
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{% url 'home' %}">Онлайн-курсы</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav mr-auto">
+                    {% if user.is_authenticated %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" aria-expanded="false">
+                                Меню
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                                {% if user.is_staff or user.is_superuser %}
+                                    <li><a class="dropdown-item" href="{% url 'course_create' %}">Создать курс</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'module_list' %}">Модули</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'material_list' %}">Материалы</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'api_users' %}">Пользователи</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'admin:index' %}">Админ-панель</a></li>
+                                {% endif %}
+                                <li><a class="dropdown-item" href="{% url 'api_courses' %}">Курсы</a></li>
+                                <li><a class="dropdown-item" href="{% url 'api_profile' %}">Профиль</a></li>
+                                <li><a class="dropdown-item" href="{% url 'about' %}">О нас</a></li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'api_login' %}">Войти</a>
+                        </li>
+                    {% endif %}
+                </ul>
+                <ul class="navbar-nav navbar-logo-right">
+                    {% if user.is_authenticated %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">Привет, {{ user.username }}</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#logoutModal">Выйти</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="content">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Модальное окно для выхода -->
+    <div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content" style="background-color: rgba(0, 0, 0, 0.8); color: white;">
+                <div class="modal-header justify-content-center border-0">
+                    <h5 class="modal-title" id="logoutModalLabel">Выход</h5>
+                </div>
+                <div class="modal-body text-center">
+                    <p>Вы уверены, что хотите выйти?</p>
+                </div>
+                <div class="modal-footer justify-content-center border-0">
+                    <a href="{% url 'api_logout' %}" class="btn btn-logout">Выйти</a>
+                    <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">Отмена</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="text-white text-center py-2">
+        <div class="container">
+            <div class="d-flex justify-content-center align-items-center">
+                <a href="{% url 'home' %}" class="mx-2">Онлайн-курсы</a>
+                <img src="{% static 'images/itcareer.png' %}" alt="Logo" class="footer-logo" style="width: 20px; height: 20px; vertical-align: middle; margin-left: 5px;">
+                <span class="copyright mx-2">© 2025</span>
+                <span class="mx-2">|</span>
+                <a href="#" class="mx-2">Политика</a> |
+                <a href="#" class="mx-2">Конфиденциальность</a> |
+                <span class="creator-tooltip">
+                    Создатель
+                    <span class="tooltiptext">Vladislav Bondarik</span>
+                </span>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script>
+        particlesJS("particles-js", {
+            particles: {
+                number: { value: 100, density: { enable: true, value_area: 800 } },
+                color: { value: "#ffffff" },
+                shape: { type: "circle" },
+                opacity: { value: 0.5, random: true, anim: { enable: true, speed: 1 } },
+                size: { value: 3, random: true, anim: { enable: true, speed: 40 } },
+                line_linked: { enable: true, distance: 150, color: "#ffffff", opacity: 0.4, width: 1 },
+                move: { enable: true, speed: 6, direction: "none", random: true, out_mode: "out" }
+            },
+            interactivity: {
+                detect_on: "canvas",
+                events: { onhover: { enable: false }, onclick: { enable: true, mode: "push" } }
+            },
+            retina_detect: true
+        });
+    </script>
+</body>
+</html>

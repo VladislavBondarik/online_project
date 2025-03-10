@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block title %}Профиль - ITCAREER{% endblock %}
+{% block content %}
+<div class="container mt-5 text-center">
+    <h1>Профиль</h1>
+    <p>Имя пользователя: {{ user.username }}</p>
+    <p>Email: {{ user.email }}</p>
+</div>
+{% endblock %}

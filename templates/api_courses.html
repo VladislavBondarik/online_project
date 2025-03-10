@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h2 class="text-center mb-4">Список курсов</h2>
+    <div id="course-list" class="row row-cols-1 row-cols-md-3 g-4">
+        {% for course in courses %}
+        <div class="col">
+            <div class="card h-100 text-center position-relative" style="background-color: white; border: 1px solid #ccc;">
+                <a href="{% url 'course_detail' course.name %}" class="course-link"></a>
+                <img src="{% if course.icon == 'question.png' %}https://cdn-icons-png.flaticon.com/512/3534/3534218.png{% else %}https://cdn-icons-png.flaticon.com/512/{{ course.icon }}{% endif %}"
+                     class="card-img-top mx-auto mt-3" style="width: 80px; height: 80px;" alt="{{ course.name }} Icon">
+                <div class="card-body">
+                    <h5 class="card-title" style="color: black;">{{ course.name }}</h5>
+                    <p class="card-text" style="color: black;">Дата: {{ course.date }}</p>
+                    <div class="progress mb-2" style="height: 10px;">
+                        <div class="progress-bar" role="progressbar" style="width: {{ course.progress }}%;" aria-valuenow="{{ course.progress }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <p class="card-text" style="color: black;">Пройдено: {{ course.progress|default:0 }}%</p>
+                    {% if user.is_authenticated and not user.is_staff %}
+                        <div class="btn-group" style="display: flex; justify-content: center; gap: 10px;">
+                            {% if course.is_favorite %}
+                                <button onclick="toggleFavorite('{{ course.name }}', 'remove')" class="btn btn-warning btn-xs favorite-btn">Удалить из избранного</button>
+                            {% else %}
+                                <button onclick="toggleFavorite('{{ course.name }}', 'add')" class="btn btn-warning btn-xs favorite-btn">Добавить в избранное</button>
+                            {% endif %}
+                            <a href="{% url 'course_test' course.name %}" class="btn btn-primary btn-xs test-btn">Тест</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div id="notification" class="notification" style="display: none; position: fixed; bottom: 50px; left: 50%; transform: translateX(-50%); padding: 5px 10px; border-radius: 3px; z-index: 1000; font-size: 14px;"></div>
+
+<style>
+    .notification.success { background-color: #28a745; color: white; }
+    .notification.repeat { background-color: #007bff; color: white; }
+    .favorite-btn, .test-btn {
+        transition: font-style 0.2s ease;
+        font-size: 14px;
+        padding: 5px 10px;
+    }
+    .favorite-btn:hover, .test-btn:hover {
+        font-style: italic;
+    }
+    .favorite-btn:active, .test-btn:active {
+        font-style: italic; /
+    }
+
+    .favorite-btn, .test-btn, .favorite-btn:hover, .test-btn:hover, .favorite-btn:active, .test-btn:active {
+        transform: none;
+        scale: 1;
+    }
+</style>
+
+<script>
+    function showNotification(message, type) {
+        const notification = document.getElementById('notification');
+        notification.textContent = message;
+        notification.className = 'notification ' + type;
+        notification.style.display = 'block';
+        setTimeout(() => notification.style.display = 'none', 2000);
+    }
+
+    function toggleFavorite(courseName, action) {
+        const data = new URLSearchParams();
+        data.append('course_name', courseName);
+        data.append('action', action);
+
+        fetch('/toggle_favorite/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: data
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'added') {
+                showNotification('Курс добавлен в избранное', 'success');
+                setTimeout(() => location.reload(), 2000);
+            } else if (data.status === 'removed') {
+                showNotification('Курс удалён из избранного', 'success');
+                setTimeout(() => location.reload(), 2000);
+            } else {
+                showNotification(data.message || 'Ошибка', 'repeat');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Ошибка сервера', 'repeat');
+        });
+    }
+</script>
+{% endblock %}

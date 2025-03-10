@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Список модулей{% endblock %}
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center">Список модулей</h1>
+    <a href="{% url 'module_create' %}" class="btn btn-primary mb-3">Создать модуль</a>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Название</th>
+                <th>Курс</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for module in modules %}
+                <tr>
+                    <td>{{ module.id }}</td>
+                    <td>{{ module.title }}</td>
+                    <td>{{ module.course.title }}</td>
+                    <td>
+                        <a href="{% url 'module_edit' module.id %}" class="btn btn-sm btn-warning">Редактировать</a>
+                        <a href="{% url 'module_delete' module.id %}" class="btn btn-sm btn-danger">Удалить</a>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="4">Модулей пока нет.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

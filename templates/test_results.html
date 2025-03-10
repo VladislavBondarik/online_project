@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+
+{% block title %}Результаты теста - {{ course_name }}{% endblock %}
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center mb-4">Результаты теста: {{ course_name }}</h1>
+
+    <div class="alert alert-info text-center" role="alert">
+        <h4>Ваш результат</h4>
+        <p>Правильных ответов: {{ correct_answers }} из {{ total_questions }}</p>
+        <p>Процент: {{ percentage }}%</p>
+    </div>
+
+    <h3 class="mt-4">Детали ответов</h3>
+    <ul class="list-group mb-4">
+        {% for result in results %}
+            <li class="list-group-item {% if result.is_correct %}list-group-item-success{% else %}list-group-item-danger{% endif %}">
+                <p><strong>Вопрос:</strong> {{ result.text }}</p>
+                <p><strong>Ваш ответ:</strong> {{ result.options|get_item:result.user_answer|default:result.user_answer }}
+                    {% if result.is_correct %}(Правильно){% else %}(Ошибка){% endif %}</p>
+                {% if not result.is_correct %}
+                    <p><strong>Правильный ответ:</strong> {{ result.options|get_item:result.correct_answer }}</p>
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+
+    <div class="text-center">
+        <a href="{% url 'api_courses' %}" class="btn btn-primary">Вернуться к курсам</a>
+    </div>
+</div>
+{% endblock %}

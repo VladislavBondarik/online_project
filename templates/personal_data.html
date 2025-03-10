@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Личные данные</title>
+</head>
+<body>
+    <h1>Личные данные</h1>
+    <form method="post" action="/api/survey/create/" id="personal-data-form">
+        {% csrf_token %}
+        <label for="full_name">Полное имя:</label>
+        <input type="text" id="full_name" name="personal_data[full_name]" required><br>
+
+        <label for="age">Возраст:</label>
+        <input type="number" id="age" name="personal_data[age]" required><br>
+
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="personal_data[email]" required><br>
+
+        <button type="submit">Сохранить и продолжить</button>
+    </form>
+</body>
+</html>

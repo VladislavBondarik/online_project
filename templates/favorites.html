@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% block title %}Избранное - ITCAREER{% endblock %}
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center mb-4" style="color: white; position: relative; z-index: 2;">
+        {% if favorite_courses %}Избранные курсы{% else %}У вас нет избранных курсов{% endif %}
+    </h1>
+
+    <div id="course-list" style="min-height: 200px; position: relative; z-index: 2;">
+        {% if favorite_courses %}
+            <div class="row row-cols-1 row-cols-md-3 g-4">
+                {% for course in favorite_courses %}
+                    <div class="col">
+                        <div class="card h-100 text-center position-relative" style="background-color: white; border: 1px solid #ccc;">
+                            <a href="{% url 'course_detail' course.name %}" class="course-link"></a>
+                            <img src="{% if course.icon == 'question.png' %}https://cdn-icons-png.flaticon.com/512/3534/3534218.png{% else %}https://cdn-icons-png.flaticon.com/512/{{ course.icon }}{% endif %}"
+                                 class="card-img-top mx-auto mt-3" style="width: 80px; height: 80px;" alt="{{ course.name }} Icon">
+                            <div class="card-body">
+                                <h5 class="card-title" style="color: black;">{{ course.name }}</h5>
+                                <p class="card-text" style="color: black;">Дата: {{ course.date }}</p>
+                                <div class="progress mb-2" style="height: 10px;">
+                                    <div class="progress-bar" role="progressbar" style="width: {{ course.progress }}%;"
+                                         aria-valuenow="{{ course.progress }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                                <p class="card-text" style="color: black;">Пройдено: {{ course.progress|default:0 }}%</p>
+                                <form class="toggle-favorite-form" method="POST" action="{% url 'toggle_favorite' %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="course_name" value="{{ course.name }}">
+                                    <input type="hidden" name="action" value="remove">
+                                    <button type="submit" class="btn btn-danger btn-sm favorite-btn"
+                                            style="color: white; position: relative; z-index: 2;">Удалить</button>
+                                </form>
+                            </div>
+                            <div class="completion-star {% if course.progress == 100 %}completed{% endif %}"
+                                 style="position: absolute; top: 10px; right: 10px; z-index: 2;">
+                                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="2" class="star">
+                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                    <path class="check-mark" d="M9 11l3 3L18 7" fill="none"
+                                          stroke="{% if course.progress == 100 %}#28a745{% else %}#ccc{% endif %}" stroke-width="2"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+
+    <div id="notification" class="notification" style="display: none; position: fixed; bottom: 50px; left: 50%; transform: translateX(-50%); padding: 5px 10px; border-radius: 3px; z-index: 1000; font-size: 14px;"></div>
+</div>
+
+<style>
+    .card { background-color: white; border: 1px solid #ccc; }
+    .card-body { color: black; }
+    .completion-star { display: flex; justify-content: center; align-items: center; }
+    .completion-star .star { fill: none; }
+    .completion-star.completed .star { stroke: #28a745; }
+    .completion-star.completed .check-mark { stroke: #28a745; }
+    .course-link { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+    .favorite-btn { transition: filter 0.3s ease-in-out; background-color: #dc3545; color: white; }
+    .favorite-btn:hover { filter: brightness(1.2); }
+    .notification.delete { background-color: #dc3545; color: white; }
+</style>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function() {
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        const csrftoken = getCookie('csrftoken');
+
+        function showNotification(message, type) {
+            var notification = $('#notification');
+            notification.text(message)
+                       .removeClass('success repeat delete')
+                       .addClass(type)
+                       .fadeIn(500)
+                       .delay(2000)
+                       .fadeOut(500);
+        }
+
+        $('.toggle-favorite-form').on('submit', function(e) {
+            e.preventDefault();
+            var form = $(this);
+            var courseName = form.find('input[name="course_name"]').val();
+            var action = form.find('input[name="action"]').val();
+
+            $.ajax({
+                url: form.attr('action'),
+                method: 'POST',
+                data: form.serialize(),
+                headers: { 'X-CSRFToken': csrftoken },
+                success: function(response) {
+                    if (response.status === 'removed') {
+                        form.closest('.col').remove();
+                        showNotification('Курс удалён из избранного', 'delete');
+                        if ($('#course-list .col').length === 0) {
+                            $('#favorites-title').text('У вас нет избранных курсов');
+                            $('#course-list').empty();
+                        }
+                    }
+                },
+                error: function(xhr) {
+                    showNotification('Ошибка сервера', 'delete');
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

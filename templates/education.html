@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Образование</title>
+</head>
+<body>
+    <h1>Образование</h1>
+    <form method="post" action="/api/survey/create/" id="education-form">
+        {% csrf_token %}
+        <label for="degree">Степень:</label>
+        <input type="text" id="degree" name="education[degree]" required><br>
+
+        <label for="institution">Учебное заведение:</label>
+        <input type="text" id="institution" name="education[institution]" required><br>
+
+        <label for="graduation_year">Год выпуска:</label>
+        <input type="number" id="graduation_year" name="education[graduation_year]" required><br>
+
+        <button type="submit">Сохранить и продолжить</button>
+    </form>
+</body>
+</html>
